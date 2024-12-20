@@ -1,5 +1,6 @@
 package test.backspark.socks.model.entity;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -14,6 +15,7 @@ import javax.persistence.Table;
 @Setter
 @Entity
 @Table(name = "socks")
+@AllArgsConstructor
 @NoArgsConstructor
 public class Socks {
     @Id
