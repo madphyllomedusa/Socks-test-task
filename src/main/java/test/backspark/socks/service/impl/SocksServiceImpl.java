@@ -191,7 +191,7 @@ public class SocksServiceImpl implements SocksService {
             String sortDirection) {
 
         Specification<Socks> spec = Specification
-                .where(SocksSpecification.hasColor(color.toLowerCase()))
+                .where(SocksSpecification.hasColor(color != null ? color.trim().toLowerCase() : null))
                 .and(SocksSpecification.hasCottonPart(operator, cottonPart))
                 .and(SocksSpecification.cottonPartBetween(minCottonPart, maxCottonPart));
 
