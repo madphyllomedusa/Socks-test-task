@@ -130,7 +130,6 @@ class SocksControllerTest {
     @Nested
     @DisplayName("POST /api/socks/batch")
     class BatchIncomeTests {
-
         static Stream<Arguments> batchArguments() {
             return Stream.of(
                 Arguments.of("valid.csv", "color,cottonPart,quantity\nred,30,10\nblue,50,20", 2),
