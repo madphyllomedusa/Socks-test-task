@@ -9,6 +9,5 @@ import java.util.Optional;
 
 @Repository
 public interface SocksRepository extends JpaRepository<Socks, Long>, JpaSpecificationExecutor<Socks> {
-
-    Optional<Socks> findByColorAndCottonPart(String color, Integer cottonPart);
+    Optional<Socks> findByArticle(String article);
 }

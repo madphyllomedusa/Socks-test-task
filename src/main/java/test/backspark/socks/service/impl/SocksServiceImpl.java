@@ -38,12 +38,13 @@ public class SocksServiceImpl implements SocksService {
     public SocksDto income(SocksDto socksDto) {
         logger.info("Socks income {}", socksDto);
 
-        validateStingAndIntegerValues(socksDto);
 
-        Socks socks = socksRepository.findByColorAndCottonPart(socksDto.getColor(), socksDto.getCottonPart())
+        Socks socks = socksRepository.findByArticle(socksDto.getArticle())
                 .orElseGet(() -> {
                     Socks newSocks = new Socks();
                     newSocks.setColor(socksDto.getColor().toLowerCase());
+                    newSocks.setBrand(socksDto.getBrand().toLowerCase());
+                    newSocks.setArticle(socksDto.getArticle());
                     newSocks.setCottonPart(socksDto.getCottonPart());
                     newSocks.setQuantity(0);
                     return newSocks;
@@ -60,8 +61,7 @@ public class SocksServiceImpl implements SocksService {
     @Transactional
     public SocksDto outcome(SocksDto socksDto) {
         logger.info("Socks outcome {}", socksDto);
-        validateStingAndIntegerValues(socksDto);
-        Socks socks = socksRepository.findByColorAndCottonPart(socksDto.getColor(), socksDto.getCottonPart())
+        Socks socks = socksRepository.findByArticle(socksDto.getArticle())
                 .orElseThrow(() -> new SocksNotFoundException("Носки не найдены"));
 
         if (socks.getQuantity() < socksDto.getQuantity()) {
@@ -78,7 +78,6 @@ public class SocksServiceImpl implements SocksService {
     @Transactional
     public SocksDto update(Long id, SocksDto socksDto) {
         logger.info("Update socks with id {}", id);
-        validateStingAndIntegerValues(socksDto);
         Socks socks = socksRepository.findById(id)
                 .orElseThrow(() -> new SocksNotFoundException("Носки не найдены"));
         socks.setColor(socksDto.getColor().toLowerCase());
@@ -114,9 +113,9 @@ public class SocksServiceImpl implements SocksService {
                 rowNum++;
                 try {
                     SocksDto dto = parseCSVLineToDto(line, rowNum);
-                    validateSocks(dto.getColor(), dto.getCottonPart(), dto.getQuantity(), rowNum);
+                    validateSocks(dto.getColor(),dto.getBrand(), dto.getArticle(), dto.getCottonPart(), dto.getQuantity(), rowNum);
 
-                    Socks socks = socksRepository.findByColorAndCottonPart(dto.getColor().toLowerCase(), dto.getCottonPart())
+                    Socks socks = socksRepository.findByArticle(dto.getArticle())
                             .map(existingSocks -> {
                                 existingSocks.setQuantity(existingSocks.getQuantity() + dto.getQuantity());
                                 return existingSocks;
@@ -151,28 +150,36 @@ public class SocksServiceImpl implements SocksService {
 
     private SocksDto parseCSVLineToDto(String line, int rowNum) {
         String[] parts = line.split(",");
-        if (parts.length != 3) {
+        if (parts.length != 5) {
             throw new IllegalArgumentException("Некорректный формат: ожидается 3 столбца, строка " + rowNum);
         }
 
         String color = parts[0].trim().toLowerCase();
+        String brand = parts[1].trim().toLowerCase();
+        String article = parts[2].trim();
         int cottonPart;
         int quantity;
 
         try {
-            cottonPart = Integer.parseInt(parts[1].trim());
-            quantity = Integer.parseInt(parts[2].trim());
+            cottonPart = Integer.parseInt(parts[3].trim());
+            quantity = Integer.parseInt(parts[4].trim());
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException(
                     "Ошибка преобразования числового значения в строке " + rowNum + ": " + e.getMessage(), e);
         }
 
-        return new SocksDto(null, color, cottonPart, quantity);
+        return new SocksDto(null, color, brand, article, cottonPart, quantity);
     }
 
-    private void validateSocks(String color, int cottonPart, int quantity, int rowNum) {
+    private void validateSocks(String color, String brand, String article, int cottonPart, int quantity, int rowNum) {
         if (color == null || color.isEmpty()) {
             throw new IllegalArgumentException("Пустой цвет в строке " + rowNum);
+        }
+        if (brand == null || brand.isEmpty()) {
+            throw new IllegalArgumentException("Пустой бренд в строке " + rowNum);
+        }
+        if (article == null || article.isEmpty()) {
+            throw new IllegalArgumentException("Пустой артикул в строке" + rowNum);
         }
         if (cottonPart < 0 || cottonPart > 100) {
             throw new IllegalArgumentException("Процент хлопка должен быть в диапазоне [0, 100] в строке " + rowNum);
@@ -208,18 +215,6 @@ public class SocksServiceImpl implements SocksService {
         return socksRepository.findAll(spec, sort).stream()
                 .mapToInt(Socks::getQuantity)
                 .sum();
-    }
-
-    private void validateStingAndIntegerValues(SocksDto socksDto) {
-        if (socksDto.getColor() == null || socksDto.getColor().isEmpty()) {
-            socksDto.setColor("");
-        }
-        if (socksDto.getCottonPart() == null) {
-            socksDto.setCottonPart(0);
-        }
-        if (socksDto.getQuantity() == null) {
-            socksDto.setQuantity(0);
-        }
     }
 
 }

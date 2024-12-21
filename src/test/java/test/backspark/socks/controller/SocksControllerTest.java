@@ -4,13 +4,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.ArgumentMatchers;
+import org.junit.jupiter.params.provider.*;
 import org.mockito.BDDMockito;
-
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -38,6 +33,9 @@ class SocksControllerTest {
     @MockBean
     private SocksService socksService;
 
+    private static final String BRAND = "nike";
+    private static final String ARTICLE = "art123";
+
     @Nested
     @DisplayName("POST /api/socks/income")
     class IncomeTests {
@@ -48,7 +46,7 @@ class SocksControllerTest {
                 "blue,50,5"
         })
         void testIncome(String color, Integer cottonPart, Integer quantity) throws Exception {
-            SocksDto outputDto = new SocksDto(1L, color.toLowerCase(), cottonPart, quantity + 20); // допустим, сервис прибавил кол-во
+            SocksDto outputDto = new SocksDto(1L, color.toLowerCase(), BRAND, ARTICLE, cottonPart, quantity + 20);
             BDDMockito.given(socksService.income(any(SocksDto.class))).willReturn(outputDto);
 
             mockMvc.perform(post("/api/socks/income")
@@ -56,13 +54,17 @@ class SocksControllerTest {
                     .content("""
                             {
                               "color": "%s",
+                              "brand": "%s",
+                              "article": "%s",
                               "cottonPart": %d,
                               "quantity": %d
                             }
-                            """.formatted(color, cottonPart, quantity)))
+                            """.formatted(color, BRAND, ARTICLE, cottonPart, quantity)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(1L))
                     .andExpect(jsonPath("$.color").value(color.toLowerCase()))
+                    .andExpect(jsonPath("$.brand").value(BRAND))
+                    .andExpect(jsonPath("$.article").value(ARTICLE))
                     .andExpect(jsonPath("$.cottonPart").value(cottonPart))
                     .andExpect(jsonPath("$.quantity").value(quantity + 20));
         }
@@ -78,7 +80,7 @@ class SocksControllerTest {
                 "green,0,1"
         })
         void testOutcome(String color, Integer cottonPart, Integer quantity) throws Exception {
-            SocksDto outputDto = new SocksDto(2L, color.toLowerCase(), cottonPart, 100 - quantity);
+            SocksDto outputDto = new SocksDto(2L, color.toLowerCase(), BRAND, ARTICLE, cottonPart, 100 - quantity);
             BDDMockito.given(socksService.outcome(any(SocksDto.class))).willReturn(outputDto);
 
             mockMvc.perform(post("/api/socks/outcome")
@@ -86,13 +88,17 @@ class SocksControllerTest {
                     .content("""
                             {
                               "color": "%s",
+                              "brand": "%s",
+                              "article": "%s",
                               "cottonPart": %d,
                               "quantity": %d
                             }
-                            """.formatted(color, cottonPart, quantity)))
+                            """.formatted(color, BRAND, ARTICLE, cottonPart, quantity)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(2L))
                     .andExpect(jsonPath("$.color").value(color.toLowerCase()))
+                    .andExpect(jsonPath("$.brand").value(BRAND))
+                    .andExpect(jsonPath("$.article").value(ARTICLE))
                     .andExpect(jsonPath("$.cottonPart").value(cottonPart))
                     .andExpect(jsonPath("$.quantity").value(100 - quantity));
         }
@@ -107,21 +113,25 @@ class SocksControllerTest {
                 "2,blue,50,10"
         })
         void testUpdate(Long id, String color, Integer cottonPart, Integer quantity) throws Exception {
-            SocksDto outputDto = new SocksDto(id, color.toLowerCase(), cottonPart, quantity);
-            BDDMockito.given(socksService.update(ArgumentMatchers.eq(id), any(SocksDto.class))).willReturn(outputDto);
+            SocksDto outputDto = new SocksDto(id, color.toLowerCase(), BRAND, ARTICLE, cottonPart, quantity);
+            BDDMockito.given(socksService.update(any(Long.class), any(SocksDto.class))).willReturn(outputDto);
 
             mockMvc.perform(put("/api/socks/{id}", id)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
                             {
                               "color": "%s",
+                              "brand": "%s",
+                              "article": "%s",
                               "cottonPart": %d,
                               "quantity": %d
                             }
-                            """.formatted(color, cottonPart, quantity)))
+                            """.formatted(color, BRAND, ARTICLE, cottonPart, quantity)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(id))
                     .andExpect(jsonPath("$.color").value(color.toLowerCase()))
+                    .andExpect(jsonPath("$.brand").value(BRAND))
+                    .andExpect(jsonPath("$.article").value(ARTICLE))
                     .andExpect(jsonPath("$.cottonPart").value(cottonPart))
                     .andExpect(jsonPath("$.quantity").value(quantity));
         }
@@ -132,8 +142,8 @@ class SocksControllerTest {
     class BatchIncomeTests {
         static Stream<Arguments> batchArguments() {
             return Stream.of(
-                Arguments.of("valid.csv", "color,cottonPart,quantity\nred,30,10\nblue,50,20", 2),
-                Arguments.of("partial.csv", "color,cottonPart,quantity\nred,30,10\n,,\ngreen,20,5", 2)
+                Arguments.of("valid.csv", "color,brand,article,cottonPart,quantity\nred,nike,art123,30,10\nblue,nike,art999,50,20"),
+                Arguments.of("partial.csv", "color,brand,article,cottonPart,quantity\nred,nike,art124,30,10\n,,,\ngreen,nike,art125,20,5")
             );
         }
 
@@ -144,8 +154,8 @@ class SocksControllerTest {
                     "text/csv", content.getBytes());
 
             List<SocksDto> mockResult = List.of(
-                    new SocksDto(10L, "red", 30, 30),
-                    new SocksDto(11L, "blue", 50, 40)
+                    new SocksDto(10L, "red", "nike", "art123", 30, 30),
+                    new SocksDto(11L, "blue", "nike", "art999", 50, 40)
             );
 
             BDDMockito.given(socksService.batchIncome(any())).willReturn(mockResult);
@@ -168,9 +178,7 @@ class SocksControllerTest {
         })
         void testGetSocksAmountByFilter(String color, String operator, Integer cottonPart) throws Exception {
             BDDMockito.given(socksService.getSocksAmountByFilter(
-                    ArgumentMatchers.eq(color), ArgumentMatchers.eq(operator), ArgumentMatchers.eq(cottonPart),
-                    ArgumentMatchers.isNull(), ArgumentMatchers.isNull(),
-                    ArgumentMatchers.isNull(), ArgumentMatchers.isNull()
+                    color, operator, cottonPart, null, null, null, null
             )).willReturn(35);
 
             mockMvc.perform(get("/api/socks")
@@ -185,7 +193,7 @@ class SocksControllerTest {
         @ValueSource(strings = {"red","blue"})
         void testGetSocksEmpty(String color) throws Exception {
             BDDMockito.given(socksService.getSocksAmountByFilter(
-                    ArgumentMatchers.eq(color), any(), any(),
+                    any(), any(), any(),
                     any(), any(),
                     any(), any()
             )).willReturn(0);

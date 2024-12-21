@@ -19,6 +19,12 @@ public class SocksDto {
     @NotNull(message = "Неверно указан цвет")
     private String color;
 
+    @NotNull(message = "Неверно указан бренд")
+    private String brand;
+
+    @NotNull(message = "Неверно указан артикул")
+    private String article;
+
     @Max(value = 100, message = "Процент содержания хлопка не должен превышать 100")
     @PositiveOrZero(message = "Неверно указан процент содержания хлопка")
     private Integer cottonPart;

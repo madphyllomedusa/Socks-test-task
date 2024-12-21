@@ -5,10 +5,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.*;
 import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -25,11 +22,7 @@ import test.backspark.socks.model.entity.Socks;
 import test.backspark.socks.model.mapper.SocksMapper;
 import test.backspark.socks.repositrory.SocksRepository;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -51,6 +44,9 @@ class SocksServiceImplTest {
         Mockito.reset(socksRepository, socksMapper);
     }
 
+    private static final String BRAND = "nike";
+    private static final String ARTICLE = "art123";
+
     @Nested
     @DisplayName("Method income")
     class IncomeTests {
@@ -62,32 +58,41 @@ class SocksServiceImplTest {
                 "yellow, 100, 100"
         })
         void testIncomeWithDifferentParams(String color, Integer cottonPart, Integer quantity) {
-            SocksDto inputDto = new SocksDto(null, color, cottonPart, quantity);
+            SocksDto inputDto = new SocksDto(null, color, BRAND, ARTICLE, cottonPart, quantity);
+
             Socks existingSocks = new Socks();
+            existingSocks.setId(1L);
             existingSocks.setColor(color.toLowerCase());
+            existingSocks.setBrand(BRAND);
+            existingSocks.setArticle(ARTICLE);
             existingSocks.setCottonPart(cottonPart);
             existingSocks.setQuantity(20);
 
-            when(socksRepository.findByColorAndCottonPart(color.toLowerCase(), cottonPart))
+            when(socksRepository.findByArticle(ARTICLE))
                     .thenReturn(Optional.of(existingSocks));
 
             Socks updatedSocks = new Socks();
+            updatedSocks.setId(1L);
             updatedSocks.setColor(color.toLowerCase());
+            updatedSocks.setBrand(BRAND);
+            updatedSocks.setArticle(ARTICLE);
             updatedSocks.setCottonPart(cottonPart);
             updatedSocks.setQuantity(20 + quantity);
 
             when(socksRepository.save(any(Socks.class))).thenReturn(updatedSocks);
 
-            SocksDto expectedDto = new SocksDto(1L, color.toLowerCase(), cottonPart, 20 + quantity);
+            SocksDto expectedDto = new SocksDto(1L, color.toLowerCase(), BRAND, ARTICLE, cottonPart, 20 + quantity);
             when(socksMapper.mapToDto(any(Socks.class))).thenReturn(expectedDto);
 
             SocksDto resultDto = socksService.income(inputDto);
 
             assertEquals(color.toLowerCase(), resultDto.getColor());
+            assertEquals(BRAND, resultDto.getBrand());
+            assertEquals(ARTICLE, resultDto.getArticle());
             assertEquals(cottonPart, resultDto.getCottonPart());
             assertEquals(20 + quantity, resultDto.getQuantity());
 
-            verify(socksRepository).findByColorAndCottonPart(color.toLowerCase(), cottonPart);
+            verify(socksRepository).findByArticle(ARTICLE);
             verify(socksRepository).save(any(Socks.class));
             verify(socksMapper).mapToDto(any(Socks.class));
         }
@@ -98,9 +103,9 @@ class SocksServiceImplTest {
                 "white, 99, 50"
         })
         void testIncomeWhenSocksNotFound(String color, Integer cottonPart, Integer quantity) {
-            SocksDto inputDto = new SocksDto(null, color, cottonPart, quantity);
+            SocksDto inputDto = new SocksDto(null, color, BRAND, ARTICLE, cottonPart, quantity);
 
-            when(socksRepository.findByColorAndCottonPart(color.toLowerCase(), cottonPart))
+            when(socksRepository.findByArticle(ARTICLE))
                     .thenReturn(Optional.empty());
 
             when(socksRepository.save(any(Socks.class))).thenAnswer(invocation -> {
@@ -109,16 +114,18 @@ class SocksServiceImplTest {
                 return arg;
             });
 
-            SocksDto expectedDto = new SocksDto(2L, color.toLowerCase(), cottonPart, quantity);
+            SocksDto expectedDto = new SocksDto(2L, color.toLowerCase(), BRAND, ARTICLE, cottonPart, quantity);
             when(socksMapper.mapToDto(any(Socks.class))).thenReturn(expectedDto);
 
             SocksDto resultDto = socksService.income(inputDto);
 
             assertEquals(color.toLowerCase(), resultDto.getColor());
+            assertEquals(BRAND, resultDto.getBrand());
+            assertEquals(ARTICLE, resultDto.getArticle());
             assertEquals(cottonPart, resultDto.getCottonPart());
             assertEquals(quantity, resultDto.getQuantity());
 
-            verify(socksRepository).findByColorAndCottonPart(color.toLowerCase(), cottonPart);
+            verify(socksRepository).findByArticle(ARTICLE);
             verify(socksRepository).save(any(Socks.class));
             verify(socksMapper).mapToDto(any(Socks.class));
         }
@@ -134,30 +141,36 @@ class SocksServiceImplTest {
                 "green, 0, 1, 1"
         })
         void testOutcome(String color, Integer cottonPart, Integer startQuantity, Integer outcomeQty) {
-            SocksDto inputDto = new SocksDto(null, color, cottonPart, outcomeQty);
+            SocksDto inputDto = new SocksDto(null, color, BRAND, ARTICLE, cottonPart, outcomeQty);
             Socks existing = new Socks();
+            existing.setId(1L);
             existing.setColor(color.toLowerCase());
+            existing.setBrand(BRAND);
+            existing.setArticle(ARTICLE);
             existing.setCottonPart(cottonPart);
             existing.setQuantity(startQuantity);
 
-            when(socksRepository.findByColorAndCottonPart(color.toLowerCase(), cottonPart))
+            when(socksRepository.findByArticle(ARTICLE))
                     .thenReturn(Optional.of(existing));
 
             Socks afterOutcome = new Socks();
+            afterOutcome.setId(1L);
             afterOutcome.setColor(color.toLowerCase());
+            afterOutcome.setBrand(BRAND);
+            afterOutcome.setArticle(ARTICLE);
             afterOutcome.setCottonPart(cottonPart);
             afterOutcome.setQuantity(startQuantity - outcomeQty);
 
             when(socksRepository.save(any(Socks.class))).thenReturn(afterOutcome);
 
-            SocksDto expectedDto = new SocksDto(3L, color.toLowerCase(), cottonPart, startQuantity - outcomeQty);
+            SocksDto expectedDto = new SocksDto(3L, color.toLowerCase(), BRAND, ARTICLE, cottonPart, startQuantity - outcomeQty);
             when(socksMapper.mapToDto(any(Socks.class))).thenReturn(expectedDto);
 
             SocksDto result = socksService.outcome(inputDto);
 
             assertEquals(startQuantity - outcomeQty, result.getQuantity());
 
-            verify(socksRepository).findByColorAndCottonPart(color.toLowerCase(), cottonPart);
+            verify(socksRepository).findByArticle(ARTICLE);
             verify(socksRepository).save(any(Socks.class));
             verify(socksMapper).mapToDto(any(Socks.class));
         }
@@ -168,18 +181,21 @@ class SocksServiceImplTest {
                 "blue, 50, 0, 1"
         })
         void testOutcomeNotEnough(String color, Integer cottonPart, Integer startQuantity, Integer outcomeQty) {
-            SocksDto inputDto = new SocksDto(null, color, cottonPart, outcomeQty);
+            SocksDto inputDto = new SocksDto(null, color, BRAND, ARTICLE, cottonPart, outcomeQty);
             Socks existing = new Socks();
+            existing.setId(1L);
             existing.setColor(color.toLowerCase());
+            existing.setBrand(BRAND);
+            existing.setArticle(ARTICLE);
             existing.setCottonPart(cottonPart);
             existing.setQuantity(startQuantity);
 
-            when(socksRepository.findByColorAndCottonPart(color.toLowerCase(), cottonPart))
+            when(socksRepository.findByArticle(ARTICLE))
                     .thenReturn(Optional.of(existing));
 
             assertThrows(NotEnoughSocksException.class, () -> socksService.outcome(inputDto));
 
-            verify(socksRepository).findByColorAndCottonPart(color.toLowerCase(), cottonPart);
+            verify(socksRepository).findByArticle(ARTICLE);
             verify(socksRepository, never()).save(any(Socks.class));
             verify(socksMapper, never()).mapToDto(any(Socks.class));
         }
@@ -190,14 +206,14 @@ class SocksServiceImplTest {
                 "pink, 10, 1"
         })
         void testOutcomeSocksNotFound(String color, Integer cottonPart, Integer outcomeQty) {
-            SocksDto inputDto = new SocksDto(null, color, cottonPart, outcomeQty);
+            SocksDto inputDto = new SocksDto(null, color, BRAND, ARTICLE, cottonPart, outcomeQty);
 
-            when(socksRepository.findByColorAndCottonPart(color.toLowerCase(), cottonPart))
+            when(socksRepository.findByArticle(ARTICLE))
                     .thenReturn(Optional.empty());
 
             assertThrows(SocksNotFoundException.class, () -> socksService.outcome(inputDto));
 
-            verify(socksRepository).findByColorAndCottonPart(color.toLowerCase(), cottonPart);
+            verify(socksRepository).findByArticle(ARTICLE);
             verify(socksRepository, never()).save(any(Socks.class));
             verify(socksMapper, never()).mapToDto(any(Socks.class));
         }
@@ -212,10 +228,12 @@ class SocksServiceImplTest {
                 "2, blue, 50, 10"
         })
         void testUpdate(Long id, String color, Integer cottonPart, Integer quantity) {
-            SocksDto inputDto = new SocksDto(null, color, cottonPart, quantity);
+            SocksDto inputDto = new SocksDto(null, color, BRAND, ARTICLE, cottonPart, quantity);
             Socks existing = new Socks();
             existing.setId(id);
             existing.setColor("oldColor");
+            existing.setBrand("oldBrand");
+            existing.setArticle("oldArticle");
             existing.setCottonPart(10);
             existing.setQuantity(5);
 
@@ -224,17 +242,21 @@ class SocksServiceImplTest {
             Socks afterUpdate = new Socks();
             afterUpdate.setId(id);
             afterUpdate.setColor(color.toLowerCase());
+            afterUpdate.setBrand(BRAND);
+            afterUpdate.setArticle(ARTICLE);
             afterUpdate.setCottonPart(cottonPart);
             afterUpdate.setQuantity(quantity);
 
             when(socksRepository.save(any(Socks.class))).thenReturn(afterUpdate);
 
-            SocksDto expectedDto = new SocksDto(id, color.toLowerCase(), cottonPart, quantity);
+            SocksDto expectedDto = new SocksDto(id, color.toLowerCase(), BRAND, ARTICLE, cottonPart, quantity);
             when(socksMapper.mapToDto(any(Socks.class))).thenReturn(expectedDto);
 
             SocksDto result = socksService.update(id, inputDto);
 
             assertEquals(color.toLowerCase(), result.getColor());
+            assertEquals(BRAND, result.getBrand());
+            assertEquals(ARTICLE, result.getArticle());
             assertEquals(cottonPart, result.getCottonPart());
             assertEquals(quantity, result.getQuantity());
 
@@ -249,7 +271,7 @@ class SocksServiceImplTest {
                 "11, pink, 20, 20"
         })
         void testUpdateNotFound(Long id, String color, Integer cottonPart, Integer quantity) {
-            SocksDto inputDto = new SocksDto(null, color, cottonPart, quantity);
+            SocksDto inputDto = new SocksDto(null, color, BRAND, ARTICLE, cottonPart, quantity);
 
             when(socksRepository.findById(id)).thenReturn(Optional.empty());
 
@@ -264,16 +286,17 @@ class SocksServiceImplTest {
     @Nested
     @DisplayName("Method batchIncome")
     class BatchIncomeTests {
+        // Обновим CSV-формат, учитывая новые поля (color,brand,article,cottonPart,quantity)
         static Stream<Arguments> batchIncomeArguments() {
             return Stream.of(
-                    Arguments.of("valid.csv", "color,cottonPart,quantity\nred,30,10\nblue,50,20", 2),
-                    Arguments.of("partial.csv", "color,cottonPart,quantity\nred,30,10\n,,\ngreen,20,5", 2) // одна строка некорректная, но две валидны
+                    Arguments.of("valid.csv", "color,brand,article,cottonPart,quantity\nred,nike,art124,30,10\nblue,nike,art999,50,20", 2),
+                    Arguments.of("partial.csv", "color,brand,article,cottonPart,quantity\nred,nike,art111,30,10\n,,,\ngreen,nike,art112,20,5", 2)
             );
         }
 
         @ParameterizedTest(name = "batchIncome with file {0}")
         @MethodSource("batchIncomeArguments")
-        void testBatchIncome(String fileName, String fileContent, int expectedCount) throws Exception {
+        void testBatchIncome(String fileName, String fileContent, int expectedCount){
             MockMultipartFile file = new MockMultipartFile("file", fileName,
                     "text/csv", fileContent.getBytes());
 
@@ -287,7 +310,7 @@ class SocksServiceImplTest {
 
             when(socksMapper.mapToDto(any(Socks.class))).thenAnswer(inv -> {
                 Socks s = inv.getArgument(0, Socks.class);
-                return new SocksDto(s.getId(), s.getColor(), s.getCottonPart(), s.getQuantity());
+                return new SocksDto(s.getId(), s.getColor(), s.getBrand(), s.getArticle(), s.getCottonPart(), s.getQuantity());
             });
 
             List<SocksDto> result = socksService.batchIncome(file);
@@ -319,12 +342,9 @@ class SocksServiceImplTest {
         })
         void testGetSocksAmountByFilter(String color, String operator, Integer cottonPart, Integer minCottonPart, Integer maxCottonPart, String sortBy, String sortDirection) {
             List<Socks> socksList = new ArrayList<>();
-            Socks s1 = new Socks();
-            s1.setQuantity(10);
-            Socks s2 = new Socks();
-            s2.setQuantity(5);
-            Socks s3 = new Socks();
-            s3.setQuantity(7);
+            Socks s1 = new Socks(); s1.setQuantity(10);
+            Socks s2 = new Socks(); s2.setQuantity(5);
+            Socks s3 = new Socks(); s3.setQuantity(7);
             socksList.add(s1);
             socksList.add(s2);
             socksList.add(s3);
@@ -333,6 +353,7 @@ class SocksServiceImplTest {
                     ArgumentMatchers.<Specification<Socks>>any(),
                     ArgumentMatchers.<Sort>any()
             )).thenReturn(socksList);
+
             Integer result = socksService.getSocksAmountByFilter(color, operator, cottonPart, minCottonPart, maxCottonPart, sortBy, sortDirection);
 
             assertEquals(10 + 5 + 7, result);
