@@ -38,8 +38,6 @@ public class SocksServiceImpl implements SocksService {
     public SocksDto income(SocksDto socksDto) {
         logger.info("Socks income {}", socksDto);
 
-        validateStingAndIntegerValues(socksDto);
-
         Socks socks = socksRepository.findByColorAndCottonPart(socksDto.getColor(), socksDto.getCottonPart())
                 .orElseGet(() -> {
                     Socks newSocks = new Socks();
@@ -60,7 +58,6 @@ public class SocksServiceImpl implements SocksService {
     @Transactional
     public SocksDto outcome(SocksDto socksDto) {
         logger.info("Socks outcome {}", socksDto);
-        validateStingAndIntegerValues(socksDto);
         Socks socks = socksRepository.findByColorAndCottonPart(socksDto.getColor(), socksDto.getCottonPart())
                 .orElseThrow(() -> new SocksNotFoundException("Носки не найдены"));
 
@@ -78,7 +75,6 @@ public class SocksServiceImpl implements SocksService {
     @Transactional
     public SocksDto update(Long id, SocksDto socksDto) {
         logger.info("Update socks with id {}", id);
-        validateStingAndIntegerValues(socksDto);
         Socks socks = socksRepository.findById(id)
                 .orElseThrow(() -> new SocksNotFoundException("Носки не найдены"));
         socks.setColor(socksDto.getColor().toLowerCase());
@@ -208,18 +204,6 @@ public class SocksServiceImpl implements SocksService {
         return socksRepository.findAll(spec, sort).stream()
                 .mapToInt(Socks::getQuantity)
                 .sum();
-    }
-
-    private void validateStingAndIntegerValues(SocksDto socksDto) {
-        if (socksDto.getColor() == null || socksDto.getColor().isEmpty()) {
-            socksDto.setColor("");
-        }
-        if (socksDto.getCottonPart() == null) {
-            socksDto.setCottonPart(0);
-        }
-        if (socksDto.getQuantity() == null) {
-            socksDto.setQuantity(0);
-        }
     }
 
 }
